@@ -1,57 +1,25 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import React, { useContext } from 'react';
 import { HiChevronRight } from 'react-icons/hi';
 import { IoIosCheckmark } from 'react-icons/io';
 import { FaTrash } from 'react-icons/fa';
-
-interface Task {
-    id: string;
-    text: string;
-    completed: boolean;
-}
-
-type Filter = 'all' | 'active';
+import { TaskContext } from './TaskProvider';
 
 const ToDoList = () => {
-    const [tasks, setTasks] = useState<Task[]>(() => {
-        const savedTasks = localStorage.getItem('tasks');
-        return savedTasks ? JSON.parse(savedTasks) : [];
-    });
-    const [taskInput, setTaskInput] = useState<string>('');
-    const [error, setError] = useState<string | null>(null);
-    const [filter, setFilter] = useState<Filter>('all');
+    const context = useContext(TaskContext);
+    if (!context) return null;
 
-    useEffect(() => {
-        localStorage.setItem('tasks', JSON.stringify(tasks));
-    }, [tasks]);
-
-    const addTask = useCallback(() => {
-        if (taskInput.trim() === '') {
-            setError('Task cannot be empty');
-            return;
-        }
-        setTasks(prevTasks => [
-            ...prevTasks,
-            { id: uuidv4(), text: taskInput.trim(), completed: false },
-        ]);
-        setTaskInput('');
-        setError(null);
-    }, [taskInput]);
-
-    const toggleTaskCompletion = useCallback((id: string) => {
-        setTasks(prevTasks =>
-            prevTasks.map(task =>
-                task.id === id ? { ...task, completed: !task.completed } : task
-            )
-        );
-    }, []);
-
-    const deleteTask = useCallback((id: string) => {
-        setTasks(prevTasks => prevTasks.filter(task => task.id !== id));
-    }, []);
-
-    const filteredTasks =
-        filter === 'all' ? tasks : tasks.filter(task => !task.completed);
+    const {
+        tasks,
+        taskInput,
+        error,
+        filter,
+        setTaskInput,
+        setError,
+        setFilter,
+        addTask,
+        toggleTaskCompletion,
+        deleteTask,
+    } = context;
 
     const handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
         if (e.key === 'Enter') {
@@ -85,13 +53,6 @@ const ToDoList = () => {
                 <HiChevronRight
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-2xl outline-0 text-gray-300 cursor-pointer hover:text-[#148F9A]"
                     onClick={addTask}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                            addTask();
-                        }
-                    }}
                 />
             </div>
 
@@ -100,8 +61,6 @@ const ToDoList = () => {
                     onClick={() => setFilter('all')}
                     className={`${filterButtonBaseClasses} ${filter === 'all' ? activeFilterClasses : inactiveFilterClasses
                         } rounded-l-[8px] w-[120px] h-[36px] px-4`}
-                    aria-pressed={filter === 'all'}
-                    aria-label="Show all tasks"
                 >
                     Show all
                 </button>
@@ -110,36 +69,25 @@ const ToDoList = () => {
                     onClick={() => setFilter('active')}
                     className={`${filterButtonBaseClasses} ${filter === 'active' ? activeFilterClasses : inactiveFilterClasses
                         } rounded-r-[8px] w-[145px] h-[36px] px-2`}
-                    aria-pressed={filter === 'active'}
-                    aria-label="Hide completed tasks"
                 >
                     Hide completed
                 </button>
             </div>
 
             <ul className="w-[285px] h-auto overflow-y-auto border border-gray-300 shadow-md rounded-md p-6">
-                {filteredTasks.length > 0 ? (
-                    filteredTasks.map((task) => (
-                        <li
-                            key={task.id}
-                            className="flex items-center justify-between mb-2.5"
-                        >
+                {tasks.length > 0 ? (
+                    tasks.map((task) => (
+                        <li key={task.id} className="flex items-center justify-between mb-2.5">
                             <div className="flex items-center">
                                 <div className="relative">
                                     <input
                                         type="checkbox"
                                         checked={task.completed}
-                                        onChange={() =>
-                                            toggleTaskCompletion(task.id)
-                                        }
-                                        className="w-4 h-4 border-2 rounded-md mr-2.5 appearance-none checked:bg-[#17A2B8] checked:border-[#17A2B8] flex items-center justify-center"
-                                        aria-label={`Mark "${task.text}" as ${task.completed
-                                            ? 'incomplete'
-                                            : 'complete'
-                                            }`}
+                                        onChange={() => toggleTaskCompletion(task.id)}
+                                        className="w-4 h-4 border-2 rounded-md mr-2.5 appearance-none checked:bg-[#17A2B8] checked:border-[#17A2B8]"
                                     />
                                     {task.completed && (
-                                        <IoIosCheckmark className="absolute top-0 left-0 w-4 h-4 text-white pointer-events-none" />
+                                        <IoIosCheckmark className="absolute top-0 left-0 w-4 h-4 text-white" />
                                     )}
                                 </div>
                                 <span
@@ -148,13 +96,6 @@ const ToDoList = () => {
                                         ? 'text-[#17A2B8] line-through'
                                         : 'text-[#6C757D]'
                                         }`}
-                                    tabIndex={0}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            toggleTaskCompletion(task.id);
-                                        }
-                                    }}
-                                    aria-label={`Task: ${task.text}`}
                                 >
                                     {task.text}
                                 </span>
@@ -162,7 +103,6 @@ const ToDoList = () => {
                             <button
                                 onClick={() => deleteTask(task.id)}
                                 className="text-red-500 text-xs hover:text-red-700 "
-                                aria-label={`Delete "${task.text}" task`}
                             >
                                 <FaTrash />
                             </button>

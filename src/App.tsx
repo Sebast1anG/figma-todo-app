@@ -1,11 +1,14 @@
 import ToDoList from './ToDoList';
+import { TaskProvider } from './TaskProvider';
 import './index.css';
 
 const App = () => {
   return (
-    <div className="App min-h-screen">
-      <ToDoList />
-    </div>
+    <TaskProvider>
+      <div className="App min-h-screen">
+        <ToDoList />
+      </div>
+    </TaskProvider>
   );
 };
 
